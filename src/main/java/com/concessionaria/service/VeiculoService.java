@@ -2,6 +2,7 @@ package com.concessionaria.service;
 
 import com.concessionaria.DTO.VeiculoRequest;
 import com.concessionaria.DTO.VeiculoResponse;
+import com.concessionaria.entity.Veiculo;
 import com.concessionaria.mapper.VeiculoMapper;
 import com.concessionaria.repository.VeiculoRepository;
 import org.springframework.stereotype.Service;
@@ -12,13 +13,18 @@ import java.util.List;
 public class VeiculoService {
 
    private final VeiculoRepository repository;
+   private final VeiculoMapper mapper;
 
-    public VeiculoService(VeiculoRepository repository) {
+
+    public VeiculoService(VeiculoRepository repository, VeiculoMapper mapper) {
         this.repository = repository;
+        this.mapper = mapper;
     }
 
     public VeiculoResponse criar(VeiculoRequest request) {
-        return null;
+        Veiculo veiculo = mapper.toEntity(request);
+        Veiculo salvo = repository.save(veiculo);
+        return mapper.toResponse(salvo);
     }
 
     public VeiculoResponse buscarPorId(Long id) {

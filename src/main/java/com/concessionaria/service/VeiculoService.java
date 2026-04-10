@@ -28,18 +28,38 @@ public class VeiculoService {
     }
 
     public VeiculoResponse buscarPorId(Long id) {
-        return null;
+        Veiculo veiculo = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+
+        return mapper.toResponse(veiculo);
     }
 
     public List<VeiculoResponse> listar() {
-        return null;
+        List<Veiculo> veiculos = repository.findAll();
+
+        return mapper.toResponseList(veiculos);
     }
 
     public VeiculoResponse atualizar(Long id, VeiculoRequest request) {
-        return null;
+        Veiculo existente = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+
+        existente.setModelo(request.getModelo());
+        existente.setMarca(request.getMarca());
+        existente.setAno(request.getAno());
+        existente.setPlaca(request.getPlaca());
+        existente.setValor(request.getValor());
+
+        Veiculo atualizado = repository.save(existente);
+
+        return mapper.toResponse(atualizado);
     }
 
     public void deletar(Long id) {
+        Veiculo veiculo = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+
+        repository.delete(veiculo);
     }
 
     public List<VeiculoResponse> buscarComFiltros(
@@ -50,6 +70,10 @@ public class VeiculoService {
             Double valorMax,
             String placa) {
 
-        return null;
+        List<Veiculo> resultado = repository.buscarComFiltros(
+                marca, modelo, ano, valorMin, valorMax, placa
+        );
+        List<VeiculoResponse> response = mapper.toResponseList(resultado);
+        return response;
     }
 }

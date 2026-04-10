@@ -4,11 +4,14 @@ import com.concessionaria.DTO.VeiculoRequest;
 import com.concessionaria.DTO.VeiculoResponse;
 import com.concessionaria.entity.Veiculo;
 import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface VeiculoMapper {
+    VeiculoMapper INSTANCE = Mappers.getMapper(VeiculoMapper.class);
+
     Veiculo toEntity(VeiculoRequest request);
 
     VeiculoResponse toResponse(Veiculo veiculo);

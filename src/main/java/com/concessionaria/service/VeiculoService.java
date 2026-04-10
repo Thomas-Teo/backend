@@ -5,15 +5,17 @@ import com.concessionaria.DTO.VeiculoResponse;
 import com.concessionaria.entity.Veiculo;
 import com.concessionaria.mapper.VeiculoMapper;
 import com.concessionaria.repository.VeiculoRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class VeiculoService {
-
-   private final VeiculoRepository repository;
-   private final VeiculoMapper mapper;
+    private static final Logger log = LoggerFactory.getLogger(VeiculoService.class);
+    private final VeiculoRepository repository;
+    private final VeiculoMapper mapper;
 
 
     public VeiculoService(VeiculoRepository repository, VeiculoMapper mapper) {
@@ -22,42 +24,48 @@ public class VeiculoService {
     }
 
     public VeiculoResponse criar(VeiculoRequest request) {
+        log.info("Iniciando criar veiculo");
+        log.info("VeiculoRequest: {}", request);
         Veiculo veiculo = mapper.toEntity(request);
+        log.info("Veiculo: {}", veiculo);
         Veiculo salvo = repository.save(veiculo);
+        log.info("Salvo: {}", salvo);
         return mapper.toResponse(salvo);
     }
 
     public VeiculoResponse buscarPorId(Long id) {
-        Veiculo veiculo = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
-
-        return mapper.toResponse(veiculo);
-    }
-
-    public List<VeiculoResponse> listar() {
-        List<Veiculo> veiculos = repository.findAll();
-
-        return mapper.toResponseList(veiculos);
+        log.info("Iniciando buscar por id");
+        Veiculo veiculo = repository.findById(id).orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+        log.info("veiculo: {}", veiculo);
+        VeiculoResponse veiculoResponse = mapper.toResponse(veiculo);
+        log.info("veiculoResponse: {}", veiculoResponse);
+        return veiculoResponse;
     }
 
     public VeiculoResponse atualizar(Long id, VeiculoRequest request) {
-        Veiculo existente = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+        log.info("Iniciando atualizar veiculo");
+        Veiculo existente = repository.findById(id).orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
 
+        log.info("existente: {}", existente);
         existente.setModelo(request.getModelo());
         existente.setMarca(request.getMarca());
         existente.setAno(request.getAno());
         existente.setPlaca(request.getPlaca());
         existente.setValor(request.getValor());
+        log.info("existente: {}", existente);
 
         Veiculo atualizado = repository.save(existente);
+        log.info("atualizado: {}", atualizado);
 
-        return mapper.toResponse(atualizado);
+        VeiculoResponse veiculoResponse = mapper.toResponse(atualizado);
+        log.info("veiculoResponse: {}", veiculoResponse);
+        return veiculoResponse;
     }
 
     public void deletar(Long id) {
-        Veiculo veiculo = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+        log.info("Iniciando deletar veiculo");
+        Veiculo veiculo = repository.findById(id).orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+        log.info("veiculo: {}", veiculo);
 
         repository.delete(veiculo);
     }
@@ -69,11 +77,11 @@ public class VeiculoService {
             Double valorMin,
             Double valorMax,
             String placa) {
-
-        List<Veiculo> resultado = repository.buscarComFiltros(
-                marca, modelo, ano, valorMin, valorMax, placa
-        );
+        log.info("Iniciando buscar com Filtros");
+        List<Veiculo> resultado = repository.buscarComFiltros(marca, modelo, ano, valorMin, valorMax, placa);
+        log.info("resultado: {}", resultado);
         List<VeiculoResponse> response = mapper.toResponseList(resultado);
+        log.info("response: {}", response);
         return response;
     }
 }

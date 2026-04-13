@@ -3,6 +3,8 @@ package com.concessionaria.service;
 import com.concessionaria.DTO.VeiculoRequest;
 import com.concessionaria.DTO.VeiculoResponse;
 import com.concessionaria.entity.Veiculo;
+import com.concessionaria.exception.RecursoNaoEncontradoException;
+import com.concessionaria.exception.RegraDeNegocioException;
 import com.concessionaria.mapper.VeiculoMapper;
 import com.concessionaria.repository.VeiculoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +75,7 @@ class VeiculoServiceTest {
     @Test
     @DisplayName("Deve Criar Veiculo com Sucesso")
     void deveCriarVeiculoComSucesso() {
+        when(repository.existsByPlaca(veiculo.getPlaca())).thenReturn(false);
         when(mapper.toEntity(request)).thenReturn(veiculo);
         when(repository.save(veiculo)).thenReturn(veiculoSalvo);
         when(mapper.toResponse(veiculoSalvo)).thenReturn(response);
@@ -83,6 +86,7 @@ class VeiculoServiceTest {
         assertEquals(1L, resultado.getId());
         assertEquals("Civic", resultado.getModelo());
 
+        verify(repository).existsByPlaca(veiculo.getPlaca());
         verify(mapper).toEntity(request);
         verify(repository).save(veiculo);
         verify(mapper).toResponse(veiculoSalvo);
@@ -109,7 +113,7 @@ class VeiculoServiceTest {
     void deveLancarExcecaoAoBuscarPorIdInexistente() {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> service.buscarPorId(1L));
+        RecursoNaoEncontradoException exception = assertThrows(RecursoNaoEncontradoException.class, () -> service.buscarPorId(1L));
 
         assertEquals("Veículo não encontrado", exception.getMessage());
         verify(repository).findById(1L);
@@ -147,12 +151,54 @@ class VeiculoServiceTest {
     void deveLancarExcecaoAoAtualizarVeiculoInexistente() {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> service.atualizar(1L, request));
+        RecursoNaoEncontradoException exception = assertThrows(RecursoNaoEncontradoException.class, () -> service.atualizar(1L, request));
 
         assertEquals("Veículo não encontrado", exception.getMessage());
         verify(repository).findById(1L);
         verify(repository, never()).save(any());
         verify(mapper, never()).toResponse(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao atualizar com placa duplicada de outro veículo")
+    void deveLancarExcecaoAoAtualizarComPlacaDuplicadaDeOutroVeiculo() {
+        Veiculo outroVeiculo = new Veiculo();
+        outroVeiculo.setId(2L);
+        outroVeiculo.setPlaca("ABC1234");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(veiculoSalvo));
+        when(repository.findByPlaca("ABC1234")).thenReturn(Optional.of(outroVeiculo));
+
+        RegraDeNegocioException exception = assertThrows(
+                RegraDeNegocioException.class,
+                () -> service.atualizar(1L, request)
+        );
+
+        assertEquals("Placa já existe no sistema", exception.getMessage());
+
+        verify(repository).findById(1L);
+        verify(repository).findByPlaca("ABC1234");
+        verify(repository, never()).save(any());
+        verify(mapper, never()).toResponse(any());
+    }
+
+    @Test
+    @DisplayName("Deve atualizar com sucesso quando a placa pertence ao próprio veículo")
+    void deveAtualizarComSucessoQuandoPlacaForDoProprioVeiculo() {
+        when(repository.findById(1L)).thenReturn(Optional.of(veiculoSalvo));
+        when(repository.findByPlaca("ABC1234")).thenReturn(Optional.of(veiculoSalvo));
+        when(repository.save(any(Veiculo.class))).thenReturn(veiculoSalvo);
+        when(mapper.toResponse(any(Veiculo.class))).thenReturn(response);
+
+        VeiculoResponse resultado = service.atualizar(1L, request);
+
+        assertNotNull(resultado);
+        assertEquals("Civic", resultado.getModelo());
+
+        verify(repository).findById(1L);
+        verify(repository).findByPlaca("ABC1234");
+        verify(repository).save(any(Veiculo.class));
+        verify(mapper).toResponse(any(Veiculo.class));
     }
 
     @Test
@@ -171,7 +217,7 @@ class VeiculoServiceTest {
     void deveLancarExcecaoAoDeletarVeiculoInexistente() {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> service.deletar(1L));
+        RecursoNaoEncontradoException exception = assertThrows(RecursoNaoEncontradoException.class, () -> service.deletar(1L));
 
         assertEquals("Veículo não encontrado", exception.getMessage());
         verify(repository).findById(1L);
@@ -198,5 +244,23 @@ class VeiculoServiceTest {
 
         verify(repository).buscarComFiltros("Honda", "Civic", 2020, 80000.0, 90000.0, "ABC1234");
         verify(mapper).toResponseList(veiculos);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao criar veículo com placa duplicada")
+    void deveLancarExcecaoAoCriarVeiculoComPlacaDuplicada() {
+        when(repository.existsByPlaca("ABC1234")).thenReturn(true);
+
+        RegraDeNegocioException exception = assertThrows(
+                RegraDeNegocioException.class,
+                () -> service.criar(request)
+        );
+
+        assertEquals("Placa já existe no sistema", exception.getMessage());
+
+        verify(repository).existsByPlaca("ABC1234");
+        verify(mapper, never()).toEntity(any());
+        verify(repository, never()).save(any());
+        verify(mapper, never()).toResponse(any());
     }
 }

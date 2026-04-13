@@ -53,9 +53,11 @@ public class VeiculoService {
         Veiculo existente = repository.findById(id).orElseThrow(() -> new RecursoNaoEncontradoException("Veículo não encontrado"));
         Optional<Veiculo> veiculoComMesmaPlaca = repository.findByPlaca(request.getPlaca());
 
-        if (veiculoComMesmaPlaca.isPresent() && !veiculoComMesmaPlaca.get().getId().equals(id)) {
-            throw new RegraDeNegocioException("Placa já existe no sistema");
-        }
+        veiculoComMesmaPlaca.ifPresent(veiculo -> {
+            if (!veiculo.getId().equals(id)) {
+                throw new RegraDeNegocioException("Placa já existe no sistema");
+            }
+        });
         log.info("existente: {}", existente);
         existente.setModelo(request.getModelo());
         existente.setMarca(request.getMarca());

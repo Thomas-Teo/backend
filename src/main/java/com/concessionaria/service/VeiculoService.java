@@ -3,6 +3,8 @@ package com.concessionaria.service;
 import com.concessionaria.DTO.VeiculoRequest;
 import com.concessionaria.DTO.VeiculoResponse;
 import com.concessionaria.entity.Veiculo;
+import com.concessionaria.exception.RecursoNaoEncontradoException;
+import com.concessionaria.exception.RegraDeNegocioException;
 import com.concessionaria.mapper.VeiculoMapper;
 import com.concessionaria.repository.VeiculoRepository;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VeiculoService {
@@ -26,6 +29,9 @@ public class VeiculoService {
     public VeiculoResponse criar(VeiculoRequest request) {
         log.info("Iniciando criar veiculo");
         log.info("VeiculoRequest: {}", request);
+        if(repository.existsByPlaca(request.getPlaca())){
+            throw new RegraDeNegocioException("Placa já existe no sistema");
+        }
         Veiculo veiculo = mapper.toEntity(request);
         log.info("Veiculo: {}", veiculo);
         Veiculo salvo = repository.save(veiculo);
@@ -35,7 +41,7 @@ public class VeiculoService {
 
     public VeiculoResponse buscarPorId(Long id) {
         log.info("Iniciando buscar por id");
-        Veiculo veiculo = repository.findById(id).orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+        Veiculo veiculo = repository.findById(id).orElseThrow(() -> new RecursoNaoEncontradoException("Veículo não encontrado"));
         log.info("veiculo: {}", veiculo);
         VeiculoResponse veiculoResponse = mapper.toResponse(veiculo);
         log.info("veiculoResponse: {}", veiculoResponse);
@@ -44,8 +50,12 @@ public class VeiculoService {
 
     public VeiculoResponse atualizar(Long id, VeiculoRequest request) {
         log.info("Iniciando atualizar veiculo");
-        Veiculo existente = repository.findById(id).orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+        Veiculo existente = repository.findById(id).orElseThrow(() -> new RecursoNaoEncontradoException("Veículo não encontrado"));
+        Optional<Veiculo> veiculoComMesmaPlaca = repository.findByPlaca(request.getPlaca());
 
+        if (veiculoComMesmaPlaca.isPresent() && !veiculoComMesmaPlaca.get().getId().equals(id)) {
+            throw new RegraDeNegocioException("Placa já existe no sistema");
+        }
         log.info("existente: {}", existente);
         existente.setModelo(request.getModelo());
         existente.setMarca(request.getMarca());
@@ -64,7 +74,7 @@ public class VeiculoService {
 
     public void deletar(Long id) {
         log.info("Iniciando deletar veiculo");
-        Veiculo veiculo = repository.findById(id).orElseThrow(() -> new RuntimeException("Veículo não encontrado"));
+        Veiculo veiculo = repository.findById(id).orElseThrow(() -> new RecursoNaoEncontradoException("Veículo não encontrado"));
         log.info("veiculo: {}", veiculo);
 
         repository.delete(veiculo);

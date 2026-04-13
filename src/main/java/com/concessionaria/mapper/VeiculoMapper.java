@@ -10,7 +10,6 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface VeiculoMapper {
-    VeiculoMapper INSTANCE = Mappers.getMapper(VeiculoMapper.class);
 
     Veiculo toEntity(VeiculoRequest request);
 
